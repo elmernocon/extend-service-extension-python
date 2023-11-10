@@ -1,0 +1,32 @@
+# dependencies
+bitarray
+environs
+Flask
+h2
+httpx
+mmh3
+requests
+PyJWT[crypto]
+PyYAML
+websockets
+Werkzeug
+
+# accelbyte
+accelbyte-py-sdk
+
+# grpc
+grpcio
+grpcio-health-checking
+grpcio-reflection
+
+# loki
+python-logging-loki
+
+# opentelemetry
+opentelemetry-sdk
+opentelemetry-instrumentation-grpc
+opentelemetry-exporter-prometheus
+opentelemetry-exporter-zipkin-proto-http
+
+# prometheus
+prometheus-client

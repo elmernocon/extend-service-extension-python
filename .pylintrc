@@ -1,0 +1,17 @@
+[MESSAGES CONTROL]
+
+disable=
+    consider-using-f-string,
+    import-error,
+    import-outside-toplevel,
+    invalid-name,
+    invalid-overridden-method,
+    missing-class-docstring,
+    missing-function-docstring,
+    missing-module-docstring,
+    no-name-in-module,
+    redefined-builtin,
+    too-few-public-methods,
+    too-many-arguments,
+    too-many-instance-attributes,
+    too-many-locals,

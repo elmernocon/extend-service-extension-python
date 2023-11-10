@@ -1,0 +1,31 @@
+.env
+.gitignore
+.pylintrc
+commitlint.config.js
+Dockerfile
+Makefile
+apidocs/
+docs/
+tests/
+venv/
+
+# Misc
+**/.DS_Store
+**/*.h
+**/*.so
+
+# Python build files/folders
+**/*.egg
+**/*.egg-info
+**/dist/
+**/build/
+
+# Generated Proto Go files
+**/*.pb.go
+**/*.pb.gw.go
+
+# Generated Proto Python files
+**/*_grpc.py
+**/*_pb2.py
+**/*_pb2.pyi
+**/*_pb2_grpc.py
