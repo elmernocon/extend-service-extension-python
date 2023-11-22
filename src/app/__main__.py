@@ -45,7 +45,6 @@ DEFAULT_AB_SECURITY_CLIENT_ID: Optional[str] = None
 DEFAULT_AB_SECURITY_CLIENT_SECRET: Optional[str] = None
 
 DEFAULT_ENABLE_HEALTH_CHECK: bool = True
-DEFAULT_ENABLE_LOKI: bool = False
 DEFAULT_ENABLE_PROMETHEUS: bool = False
 DEFAULT_ENABLE_REFLECTION: bool = True
 DEFAULT_ENABLE_ZIPKIN: bool = False
@@ -177,10 +176,6 @@ def create_options(env: Env, logger: Logger) -> List[AppOption]:
             )
 
             options.append(AppOptionGRPCHealthCheck())
-        if env.bool("LOKI", DEFAULT_ENABLE_LOKI):
-            from accelbyte_grpc_plugin.options.loki import AppOptionLoki
-
-            options.append(AppOptionLoki())
         if env.bool("PROMETHEUS", DEFAULT_ENABLE_PROMETHEUS):
             from accelbyte_grpc_plugin.options.prometheus import AppOptionPrometheus
 
