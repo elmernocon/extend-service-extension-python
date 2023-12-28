@@ -97,13 +97,16 @@ build-gateway:
 install:
 	$(PYTHONX) -m pip install .
 
-build: build-gateway install
-
 run:
 	$(PYTHONX) -m app --gateway
 
 image:
 	docker build --tag $(IMAGE_NAME) .
+
+build: image
+
+run: .env
+	docker run --rm --env-file .env -p 6565:6565 -p 8000:8000 -p 8080:8080 $(IMAGE_NAME)
 
 imagex:
 	docker buildx inspect $(BUILDER) || docker buildx create --name $(BUILDER) --use
