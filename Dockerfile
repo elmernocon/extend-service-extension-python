@@ -1,6 +1,8 @@
 FROM rvolosatovs/protoc:4.1.0 as proto-builder
 WORKDIR /.build
 COPY proto proto
+
+# protoc-apidocs
 RUN mkdir -p /.output/apidocs && \
     protoc \
         --proto_path=proto/app \
@@ -8,6 +10,8 @@ RUN mkdir -p /.output/apidocs && \
         --openapiv2_opt logtostderr=true \
         --openapiv2_opt use_go_templates=true \
         guildService.proto
+
+# protoc-gateway
 RUN mkdir -p /.output/gateway/pkg/pb && \
     protoc \
         --proto_path=proto/app \
@@ -19,6 +23,8 @@ RUN mkdir -p /.output/gateway/pkg/pb && \
         --grpc-gateway_opt paths=source_relative \
         permission.proto \
         guildService.proto
+
+# protoc-app
 RUN mkdir -p /.output/src && \
     protoc \
         --proto_path=google/api=proto/google/api \

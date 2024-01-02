@@ -32,6 +32,22 @@ protoc-apidocs: clean-apidocs
 			--openapiv2_opt use_go_templates=true \
 			guildService.proto
 
+protoc-gateway: clean-gateway
+	mkdir -p gateway/pkg/pb
+	docker run --tty --rm --user $$(id -u):$$(id -g) \
+		--volume $$(pwd)/proto:/proto \
+		--volume $$(pwd)/gateway:/gateway \
+		rvolosatovs/protoc:4.1.0 \
+			--proto_path=/proto/app \
+			--go_out=/gateway/pkg/pb \
+			--go_opt=paths=source_relative \
+			--go-grpc_out=require_unimplemented_servers=false:/gateway/pkg/pb \
+			--go-grpc_opt=paths=source_relative \
+			--grpc-gateway_out=logtostderr=true:/gateway/pkg/pb \
+			--grpc-gateway_opt paths=source_relative \
+			permission.proto \
+			guildService.proto
+
 protoc-app: clean-app
 	docker run --tty --rm --user $$(id -u):$$(id -g) \
 		--volume $$(pwd)/proto:/proto \
@@ -63,36 +79,9 @@ protoc-app: clean-app
 	sed -i 's/import guildService_pb2 as guildService__pb2/from . import guildService_pb2 as guildService__pb2/' \
 		src/app/proto/guildService_pb2_grpc.py
 
-protoc-gateway: clean-gateway
-	mkdir -p gateway/pkg/pb
-	docker run --tty --rm --user $$(id -u):$$(id -g) \
-		--volume $$(pwd)/proto:/proto \
-		--volume $$(pwd)/gateway:/gateway \
-		rvolosatovs/protoc:4.1.0 \
-			--proto_path=/proto/app \
-			--go_out=/gateway/pkg/pb \
-			--go_opt=paths=source_relative \
-			--go-grpc_out=require_unimplemented_servers=false:/gateway/pkg/pb \
-			--go-grpc_opt=paths=source_relative \
-			--grpc-gateway_out=logtostderr=true:/gateway/pkg/pb \
-			--grpc-gateway_opt paths=source_relative \
-			permission.proto \
-			guildService.proto
+protoc: protoc-apidocs protoc-gateway protoc-app
 
-protoc: protoc-apidocs protoc-app protoc-gateway
-
-build-gateway: OS=linux
-build-gateway:
-	docker run --tty --rm --user $$(id -u):$$(id -g) \
-		--volume $$(pwd)/gateway:/gateway \
-		--workdir /gateway \
-		--env CGO_ENABLED=1 \
-		--env GOCACHE=/gateway/.cache/go-build \
-		--env GOOS=$(OS) \
-		golang:1.20-bullseye \
-		sh -c "go mod tidy && go mod verify && go build -o gateway.so -buildmode=c-shared extend-grpc-gateway"
-	mv gateway/gateway.h gateway.h
-	mv gateway/gateway.so gateway.so
+build: protoc
 
 install:
 	$(PYTHONX) -m pip install .
@@ -100,12 +89,10 @@ install:
 run:
 	$(PYTHONX) -m app --gateway
 
-image:
+docker-image:
 	docker build --tag $(IMAGE_NAME) .
 
-build: image
-
-run: .env
+docker-run: .env
 	docker run --rm --env-file .env -p 6565:6565 -p 8000:8000 -p 8080:8080 $(IMAGE_NAME)
 
 imagex:
