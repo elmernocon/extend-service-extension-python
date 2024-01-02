@@ -41,9 +41,9 @@ flow properly when the app is deployed.
 
    f. [grpcui](https://github.com/fullstorydev/grpcui)
 
-2. Access to `AccelByte Gaming Services` demo environment.
+2. Access to `AccelByte Gaming Services` environment.
 
-   a. Base URL: https://demo.accelbyte.io.
+   a. Base URL:
 
       - For `Starter` tier e.g.  https://spaceshooter.dev.gamingservices.accelbyte.io
       - For `Premium` tier e.g.  https://dev.accelbyte.io
