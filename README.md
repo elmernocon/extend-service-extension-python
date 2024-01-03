@@ -201,4 +201,4 @@ After done testing, you may want to deploy this app to `AccelByte Gaming Service
 
 ## Additional
 
-For more details on how to develop a custom service based on this sample app, please refer to [this](./docs/0-toc.md).
+For more details on how to develop a custom service based on this sample app, please refer documentation [here](./docs/0-toc.md).
