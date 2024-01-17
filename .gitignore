@@ -392,29 +392,20 @@ $RECYCLE.BIN/
 # JetBrains IDE
 .idea/
 
-# Generated Proto Go files
-*.pb.go
-*.pb.gw.go
-
-# Generated Proto Python files
+# Generated Proto files
 *_grpc.py
 *_pb2.py
 *_pb2.pyi
 *_pb2_grpc.py
-
-# Generated Swagger files
-#apidocs/
-#*.swagger.json
-
-# Misc
-gateway.h
-gateway.so
-
-# Cache dir
-.cache/
+*.pb.go
+*.pb.gw.go
 
 # Virtual Environments
 venv*/
 
 # Docker Compose .env file
 .env
+
+# Others
+.docker/
+.local/
