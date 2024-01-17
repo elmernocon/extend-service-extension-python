@@ -1,3 +1,5 @@
-# Copyright (c) 2023 AccelByte Inc. All Rights Reserved.
-# This is licensed software from AccelByte Inc, for limitations
-# and restrictions contact your company contract manager.
+# https://stackoverflow.com/a/55258233
+
+import os
+import sys
+sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
