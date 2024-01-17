@@ -5,10 +5,14 @@
 SHELL := /bin/bash
 PYTHONX := python
 
+BUILDER := $(IMAGE_NAME)-builder
 IMAGE_NAME := $(shell basename "$$(pwd)")-app
 
-BUILDER := $(IMAGE_NAME)-builder
+VENV_DIR := venv
+SOURCE_DIR := src
+TEST_DIR := tests
 
+.PHONY: venv test
 
 clean-apidocs:
 	rm -rfv apidocs/*
@@ -53,13 +57,9 @@ protoc-app: clean-app
 		--volume $$(pwd)/proto:/proto \
 		--volume $$(pwd)/src:/src \
 		rvolosatovs/protoc:4.1.0 \
-			--proto_path=google/api=/proto/google/api \
-			--proto_path=protoc-gen-openapiv2/options=/proto/protoc-gen-openapiv2/options \
 			--grpc-python_out=/src \
 			--pyi_out=/src \
 			--python_out=/src \
-			google/api/annotations.proto \
-			google/api/http.proto \
 			protoc-gen-openapiv2/options/annotations.proto \
 			protoc-gen-openapiv2/options/openapiv2.proto
 	docker run --tty --rm --user $$(id -u):$$(id -g) \
@@ -72,34 +72,30 @@ protoc-app: clean-app
 			--python_out=/src/app/proto \
 			permission.proto \
 			guildService.proto
-	sed -i 's/import permission_pb2 as permission__pb2/from . import permission_pb2 as permission__pb2/' \
-		src/app/proto/guildService_pb2.py
-	sed -i 's/import permission_pb2 as _permission_pb2/from . import permission_pb2 as _permission_pb2/' \
-		src/app/proto/guildService_pb2.pyi
-	sed -i 's/import guildService_pb2 as guildService__pb2/from . import guildService_pb2 as guildService__pb2/' \
-		src/app/proto/guildService_pb2_grpc.py
 
 protoc: protoc-apidocs protoc-gateway protoc-app
 
+venv:
+	python3.9 -m venv ${VENV_DIR} \
+			&& ${VENV_DIR}/bin/pip install -r requirements-dev.txt
+
 build: protoc
 
-install:
-	$(PYTHONX) -m pip install .
+run: venv protoc
+	docker run --rm -it -u $$(id -u):$$(id -g) -v $$(pwd):/data -w /data -e HOME=/data --entrypoint /bin/sh python:3.9-slim \
+			-c 'ln -sf $$(which python) ${VENV_DIR}/bin/python-docker \
+					&& PYTHONPATH=${SOURCE_DIR} GRPC_VERBOSITY=debug ${VENV_DIR}/bin/python-docker -m app'
 
-run:
-	$(PYTHONX) -m app --gateway
-
-docker-image:
-	docker build --tag $(IMAGE_NAME) .
-
-docker-run: .env
-	docker run --rm --env-file .env -p 6565:6565 -p 8000:8000 -p 8080:8080 $(IMAGE_NAME)
+help: venv protoc
+	docker run --rm -t -u $$(id -u):$$(id -g) -v $$(pwd):/data -w /data -e HOME=/data --entrypoint /bin/sh python:3.9-slim \
+			-c 'ln -sf $$(which python) ${VENV_DIR}/bin/python-docker \
+					&& PYTHONPATH=${SOURCE_DIR} ${VENV_DIR}/bin/python-docker -m app --help'
 
 imagex:
 	docker buildx inspect $(BUILDER) || docker buildx create --name $(BUILDER) --use
 	docker buildx build --tag $(IMAGE_NAME) --platform linux/arm64/v8,linux/amd64 .
 	docker buildx build --tag $(IMAGE_NAME) --load .
-	#docker buildx rm $(BUILDER)
+	docker buildx rm --keep-state $(BUILDER)
 
 imagex_push:
 	@test -n "$(IMAGE_TAG)" || (echo "IMAGE_TAG is not set (e.g. 'v0.1.0', 'latest')"; exit 1)
@@ -108,11 +104,7 @@ imagex_push:
 	docker buildx build --tag $(REPO_URL):$(IMAGE_TAG) --platform linux/arm64/v8,linux/amd64 --push .
 	docker buildx rm --keep-state $(BUILDER)
 
-test: .env
-	docker run --tty --rm \
-		--env-file '.env' \
-		--volume $$(pwd):/data \
-		--workdir /data \
-		python:3.9-slim-bullseye \
-		sh -c "python -m pip install . && \
-				PYTHONPATH=tests python -m app_tests"
+test: venv protoc
+	docker run --rm -t -u $$(id -u):$$(id -g) -v $$(pwd):/data -w /data -e HOME=/data --entrypoint /bin/sh python:3.9-slim \
+			-c 'ln -sf $$(which python) ${VENV_DIR}/bin/python-docker \
+					&& PYTHONPATH=${SOURCE_DIR}:${TEST_DIR} ${VENV_DIR}/bin/python-docker -m app_tests'
