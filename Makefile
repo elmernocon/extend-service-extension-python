@@ -57,9 +57,13 @@ protoc-app: clean-app
 		--volume $$(pwd)/proto:/proto \
 		--volume $$(pwd)/src:/src \
 		rvolosatovs/protoc:4.1.0 \
+			--proto_path=google/api=/proto/google/api \
+			--proto_path=protoc-gen-openapiv2/options=/proto/protoc-gen-openapiv2/options \
 			--grpc-python_out=/src \
 			--pyi_out=/src \
 			--python_out=/src \
+			google/api/annotations.proto \
+			google/api/http.proto \
 			protoc-gen-openapiv2/options/annotations.proto \
 			protoc-gen-openapiv2/options/openapiv2.proto
 	docker run --tty --rm --user $$(id -u):$$(id -g) \
