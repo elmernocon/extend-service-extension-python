@@ -10,7 +10,7 @@ IMAGE_NAME := $(shell basename "$$(pwd)")-app
 
 VENV_DIR := venv
 SOURCE_DIR := src
-TEST_DIR := tests
+TEST_DIR := test
 
 .PHONY: venv test
 
