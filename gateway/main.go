@@ -4,21 +4,24 @@ package main
 // import "C"
 
 import (
+	"bytes"
+	"encoding/json"
+	common "extend-grpc-gateway/pkg/common"
 	"flag"
 	"fmt"
 	"log"
+	"net/http"
+	_ "net/http/pprof"
 	"os"
 	"os/signal"
-	"net/http"
 	"path/filepath"
 	"time"
-	_ "net/http/pprof"
-	common "extend-grpc-gateway/pkg/common"
 
 	_ "golang.org/x/net/trace"
 
-	"github.com/sirupsen/logrus"
+	"github.com/go-openapi/loads"
 	"github.com/golang/glog"
+	"github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
 )
 
@@ -82,7 +85,32 @@ func serveSwaggerJSON(mux *http.ServeMux, swaggerDir string) {
 		}
 
 		firstMatchingFile := matchingFiles[0]
-		http.ServeFile(w, r, firstMatchingFile)
+		swagger, err := loads.Spec(firstMatchingFile)
+		if err != nil {
+			http.Error(w, "Error parsing Swagger JSON file", http.StatusInternalServerError)
+			return
+		}
+
+		// Update the base path
+		swagger.Spec().BasePath = common.BasePath
+
+		updatedSwagger, err := swagger.Spec().MarshalJSON()
+		if err != nil {
+			http.Error(w, "Error serializing updated Swagger JSON", http.StatusInternalServerError)
+			return
+		}
+		var prettySwagger bytes.Buffer
+		err = json.Indent(&prettySwagger, updatedSwagger, "", "  ")
+		if err != nil {
+			http.Error(w, "Error formatting updated Swagger JSON", http.StatusInternalServerError)
+			return
+		}
+
+		_, err = w.Write(prettySwagger.Bytes())
+		if err != nil {
+			http.Error(w, "Error writing Swagger JSON response", http.StatusInternalServerError)
+			return
+		}
 	})
 	apidocsPath := fmt.Sprintf("%s/apidocs/api.json", common.BasePath)
 	mux.Handle(apidocsPath, fileHandler)
@@ -120,7 +148,8 @@ func main() {
 		}
 	}()
 
-	logrus.Infof("grpc server started")	
+	logrus.Infof("grpc server started")
+    logrus.Infof("app server started on base path: " + common.BasePath)
 
 	ctx, _ = signal.NotifyContext(ctx, os.Interrupt)
 	<-ctx.Done()
