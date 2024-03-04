@@ -5,12 +5,14 @@
 SHELL := /bin/bash
 PYTHONX := python
 
-BUILDER := $(IMAGE_NAME)-builder
 IMAGE_NAME := $(shell basename "$$(pwd)")-app
+BUILDER := $(IMAGE_NAME)-builder
 
 VENV_DIR := venv
 SOURCE_DIR := src
 TEST_DIR := test
+
+PROJECT_DIR ?= $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
 
 .PHONY: venv test
 
@@ -27,8 +29,8 @@ clean: clean-apidocs clean-app clean-gateway
 
 protoc-apidocs: clean-apidocs
 	docker run --tty --rm --user $$(id -u):$$(id -g) \
-		--volume $$(pwd)/proto:/proto \
-		--volume $$(pwd)/apidocs:/apidocs \
+		--volume $(PROJECT_DIR)/proto:/proto \
+		--volume $(PROJECT_DIR)/apidocs:/apidocs \
 		rvolosatovs/protoc:4.1.0 \
 			--proto_path=/proto/app \
 			--openapiv2_out /apidocs \
@@ -39,8 +41,8 @@ protoc-apidocs: clean-apidocs
 protoc-gateway: clean-gateway
 	mkdir -p gateway/pkg/pb
 	docker run --tty --rm --user $$(id -u):$$(id -g) \
-		--volume $$(pwd)/proto:/proto \
-		--volume $$(pwd)/gateway:/gateway \
+		--volume $(PROJECT_DIR)/proto:/proto \
+		--volume $(PROJECT_DIR)/gateway:/gateway \
 		rvolosatovs/protoc:4.1.0 \
 			--proto_path=/proto/app \
 			--go_out=/gateway/pkg/pb \
@@ -54,8 +56,8 @@ protoc-gateway: clean-gateway
 
 protoc-app: clean-app
 	docker run --tty --rm --user $$(id -u):$$(id -g) \
-		--volume $$(pwd)/proto:/proto \
-		--volume $$(pwd)/src:/src \
+		--volume $(PROJECT_DIR)/proto:/proto \
+		--volume $(PROJECT_DIR)/src:/src \
 		rvolosatovs/protoc:4.1.0 \
 			--proto_path=google/api=/proto/google/api \
 			--proto_path=protoc-gen-openapiv2/options=/proto/protoc-gen-openapiv2/options \
@@ -67,8 +69,8 @@ protoc-app: clean-app
 			protoc-gen-openapiv2/options/annotations.proto \
 			protoc-gen-openapiv2/options/openapiv2.proto
 	docker run --tty --rm --user $$(id -u):$$(id -g) \
-		--volume $$(pwd)/proto:/proto \
-		--volume $$(pwd)/src:/src \
+		--volume $(PROJECT_DIR)/proto:/proto \
+		--volume $(PROJECT_DIR)/src:/src \
 		rvolosatovs/protoc:4.1.0 \
 			--proto_path=/proto/app \
 			--grpc-python_out=/src/app/proto \
@@ -86,12 +88,12 @@ venv:
 build: protoc
 
 run: venv protoc
-	docker run --rm -it -u $$(id -u):$$(id -g) -v $$(pwd):/data -w /data -e HOME=/data --entrypoint /bin/sh python:3.9-slim \
+	docker run --rm -it -u $$(id -u):$$(id -g) -v $(PROJECT_DIR):/data -w /data -e HOME=/data --entrypoint /bin/sh python:3.9-slim \
 			-c 'ln -sf $$(which python) ${VENV_DIR}/bin/python-docker \
 					&& PYTHONPATH=${SOURCE_DIR} GRPC_VERBOSITY=debug ${VENV_DIR}/bin/python-docker -m app'
 
 help: venv protoc
-	docker run --rm -t -u $$(id -u):$$(id -g) -v $$(pwd):/data -w /data -e HOME=/data --entrypoint /bin/sh python:3.9-slim \
+	docker run --rm -t -u $$(id -u):$$(id -g) -v $(PROJECT_DIR):/data -w /data -e HOME=/data --entrypoint /bin/sh python:3.9-slim \
 			-c 'ln -sf $$(which python) ${VENV_DIR}/bin/python-docker \
 					&& PYTHONPATH=${SOURCE_DIR} ${VENV_DIR}/bin/python-docker -m app --help'
 
@@ -109,6 +111,34 @@ imagex_push:
 	docker buildx rm --keep-state $(BUILDER)
 
 test: venv protoc
-	docker run --rm -t -u $$(id -u):$$(id -g) -v $$(pwd):/data -w /data -e HOME=/data --entrypoint /bin/sh python:3.9-slim \
+	docker run --rm -t -u $$(id -u):$$(id -g) -v $(PROJECT_DIR):/data -w /data -e HOME=/data --entrypoint /bin/sh python:3.9-slim \
 			-c 'ln -sf $$(which python) ${VENV_DIR}/bin/python-docker \
 					&& PYTHONPATH=${SOURCE_DIR}:${TEST_DIR} ${VENV_DIR}/bin/python-docker -m app_tests'
+
+test_functional_local_hosted: proto
+	@test -n "$(ENV_PATH)" || (echo "ENV_PATH is not set"; exit 1)
+	docker build --tag service-extension-test-functional -f test/functional/Dockerfile test/functional && \
+	docker run --rm -t \
+		--env-file $(ENV_PATH) \
+		-e HOME=/data \
+		-e GOCACHE=/data/.cache/go-build \
+		-e GOPATH=/data/.cache/mod \
+		-u $$(id -u):$$(id -g) \
+		-v $(PROJECT_DIR):/data \
+		-w /data service-extension-test-functional bash ./test/functional/test-local-hosted.sh
+
+test_functional_accelbyte_hosted: proto
+	@test -n "$(ENV_PATH)" || (echo "ENV_PATH is not set"; exit 1)
+	docker build --tag service-extension-test-functional -f test/functional/Dockerfile test/functional && \
+	docker run --rm -t \
+		--env-file $(ENV_PATH) \
+		-e HOME=/data \
+		-e GOCACHE=/data/.cache/go-build \
+		-e GOPATH=/data/.cache/mod \
+		-e DOCKER_CONFIG=/tmp/.docker \
+		-e PROJECT_DIR=$(PROJECT_DIR) \
+		-u $$(id -u):$$(id -g) \
+		--group-add $$(getent group docker | cut -d ':' -f 3) \
+		-v /var/run/docker.sock:/var/run/docker.sock \
+		-v $(PROJECT_DIR):/data \
+		-w /data service-extension-test-functional bash ./test/functional/test-accelbyte-hosted.sh

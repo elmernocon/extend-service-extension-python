@@ -27,6 +27,7 @@ opentelemetry-sdk
 opentelemetry-instrumentation-grpc
 opentelemetry-exporter-prometheus==1.12.0rc1
 opentelemetry-exporter-zipkin-proto-http
+opentelemetry-propagator-b3
 
 # prometheus
 prometheus-client
