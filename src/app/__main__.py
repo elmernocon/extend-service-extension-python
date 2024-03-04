@@ -41,8 +41,8 @@ DEFAULT_APP_PORT: int = 6565
 
 DEFAULT_AB_BASE_URL: str = "https://test.accelbyte.io"
 DEFAULT_AB_NAMESPACE: str = "accelbyte"
-DEFAULT_AB_SECURITY_CLIENT_ID: Optional[str] = None
-DEFAULT_AB_SECURITY_CLIENT_SECRET: Optional[str] = None
+DEFAULT_AB_CLIENT_ID: Optional[str] = None
+DEFAULT_AB_CLIENT_SECRET: Optional[str] = None
 
 DEFAULT_ENABLE_HEALTH_CHECK: bool = True
 DEFAULT_ENABLE_PROMETHEUS: bool = True
@@ -164,9 +164,9 @@ def create_options(env: Env, logger: Logger) -> List[AppOption]:
     with env.prefixed("AB_"):
         base_url = env.str("BASE_URL", DEFAULT_AB_BASE_URL)
         namespace = env.str("NAMESPACE", DEFAULT_AB_NAMESPACE)
-        client_id = env.str("SECURITY_CLIENT_ID", DEFAULT_AB_SECURITY_CLIENT_ID)
+        client_id = env.str("CLIENT_ID", DEFAULT_AB_CLIENT_ID)
         client_secret = env.str(
-            "SECURITY_CLIENT_SECRET", DEFAULT_AB_SECURITY_CLIENT_SECRET
+            "CLIENT_SECRET", DEFAULT_AB_CLIENT_SECRET
         )
 
     with env.prefixed("ENABLE_"):
@@ -202,6 +202,9 @@ def create_options(env: Env, logger: Logger) -> List[AppOption]:
                 from accelbyte_py_sdk.token_validation.caching import (
                     CachingTokenValidator,
                 )
+                from accelbyte_py_sdk.services.auth import (
+                    login_client,
+                )
                 from accelbyte_grpc_plugin.interceptors.authorization import (
                     AuthorizationServerInterceptor,
                 )
@@ -218,6 +221,9 @@ def create_options(env: Env, logger: Logger) -> List[AppOption]:
                         "token": InMemoryTokenRepository(),
                     }
                 )
+                result, error = login_client(sdk=sdk)
+                if error:
+                    raise Exception(str(error))
                 options.append(
                     AppOptionGRPCInterceptor(
                         interceptor=AuthorizationServerInterceptor(
