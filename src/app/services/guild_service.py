@@ -77,8 +77,6 @@ class AsyncGuildService(GuildServiceServicer):
         if error:
             raise Exception(error)
 
-        assert isinstance(response, cs_models.ModelsGameRecordResponse)
-
         result = CreateOrUpdateGuildProgressResponse()
         result.guild_progress.guild_id = response.value["guild_id"]
         result.guild_progress.namespace = response.value["namespace"]
@@ -105,8 +103,6 @@ class AsyncGuildService(GuildServiceServicer):
         )
         if error:
             raise Exception(error)
-
-        assert isinstance(response, cs_models.ModelsGameRecordResponse)
 
         result = GetGuildProgressResponse()
         result.guild_progress.guild_id = response.value["guild_id"]
