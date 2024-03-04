@@ -25,7 +25,7 @@ python-logging-loki
 # opentelemetry
 opentelemetry-sdk
 opentelemetry-instrumentation-grpc
-opentelemetry-exporter-prometheus
+opentelemetry-exporter-prometheus==1.12.0rc1
 opentelemetry-exporter-zipkin-proto-http
 
 # prometheus
