@@ -1,24 +1,31 @@
-FROM golang:1.20-bullseye as gateway-builder
+# gRPC Gateway Builder
+FROM --platform=$BUILDPLATFORM golang:1.20 as grpc-gateway-builder
+ARG TARGETOS
+ARG TARGETARCH
+ARG GOOS=$TARGETOS
+ARG GOARCH=$TARGETARCH
+ARG CGO_ENABLED=0
 WORKDIR /build
-COPY gateway .
-RUN go mod tidy \
-        && CGO_ENABLED=0 go build -o /output/gateway extend-grpc-gateway
+COPY gateway/go.mod gateway/go.sum .
+RUN go mod download
+COPY gateway/ .
+RUN go build -v -o /output/$TARGETOS/$TARGETARCH/grpc_gateway .
 
 
+# Extend App
 FROM python:3.9-slim-bullseye
+ARG TARGETOS
+ARG TARGETARCH
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
-RUN apt-get update  \
-        && apt-get install -y supervisor procps --no-install-recommends \
-        && apt-get clean \
-        && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 COPY requirements.txt requirements.txt
 RUN python -m pip install -r requirements.txt
 COPY apidocs apidocs
 COPY gateway/third_party third_party
-COPY src src
-COPY --from=gateway-builder /output/gateway gateway
-COPY supervisord.conf /etc/supervisor/supervisord.conf
+COPY src .
+COPY --from=grpc-gateway-builder /output/$TARGETOS/$TARGETARCH/grpc_gateway .
+COPY wrapper.sh .
+# gRPC server port, gRPC gateway port, Prometheus /metrics port
 EXPOSE 6565 8000 8080
-ENTRYPOINT ["supervisord", "-c", "/etc/supervisor/supervisord.conf"]
+CMD ./wrapper.sh
