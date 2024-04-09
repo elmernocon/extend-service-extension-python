@@ -192,6 +192,14 @@ After done testing, you may want to deploy this app to `AccelByte Gaming Service
    make imagex_push IMAGE_TAG=v0.0.1 REPO_URL=xxxxxxxxxx.dkr.ecr.us-west-2.amazonaws.com/accelbyte/justice/development/extend/xxxxxxxxxx/xxxxxxxxxx
    ```
    > :exclamation: **The REPO_URL is obtained from step 1**: It can be found under 'Repository URI' in the app detail.
+5. Open Admin Portal, go to **Extend** -> **Service Extension**. And then select the extend app.
+7. In App Detail page, to deploy latest uploaded image, click **Deploy Latest Image**. Confirm the deployment and then wait until app status is running.
+**OR**
+7. To deploy selected image tag, click **Image Version History** and after the page changed, select desired image tag to be deployed.
+8. Click **Deploy Image**, confirm the deployment and go back to App Detail by clicking **Cancel**.
+9. Wait until app status is running.
+
+For more information on how to deploy extend service extension app, please read [this documentation](https://docs.accelbyte.io/gaming-services/services/extend/service-extension/getting-started-service-extension/#build-and-upload-the-extend-app).
 
 ## Additional
 
