@@ -26,6 +26,7 @@ COPY gateway/third_party third_party
 COPY src .
 COPY --from=grpc-gateway-builder /output/$TARGETOS/$TARGETARCH/grpc_gateway .
 COPY wrapper.sh .
+RUN chmod +x wrapper.sh
 # gRPC server port, gRPC gateway port, Prometheus /metrics port
 EXPOSE 6565 8000 8080
 CMD ./wrapper.sh
