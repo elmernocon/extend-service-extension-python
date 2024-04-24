@@ -4,7 +4,7 @@ Now that we have defined our service, the next step is to implement our service.
 This is where we define the actual logic of our gRPC methods.
 You can read more information related to Python gRPC [here](https://grpc.io/docs/languages/python/basics/).
 
-We'll be doing this in the `src/app/services/service.py` file.
+We'll be doing this in the `src/app/services/my_service.py` file.
 
 Here's a brief outline of what this chapter will cover:
 
