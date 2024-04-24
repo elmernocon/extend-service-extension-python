@@ -36,7 +36,7 @@ protoc-apidocs: clean-apidocs
 			--openapiv2_out /apidocs \
 			--openapiv2_opt logtostderr=true \
 			--openapiv2_opt use_go_templates=true \
-			guildService.proto
+			service.proto
 
 protoc-gateway: clean-gateway
 	mkdir -p gateway/pkg/pb
@@ -52,7 +52,7 @@ protoc-gateway: clean-gateway
 			--grpc-gateway_out=logtostderr=true:/gateway/pkg/pb \
 			--grpc-gateway_opt paths=source_relative \
 			permission.proto \
-			guildService.proto
+			service.proto
 
 protoc-app: clean-app
 	docker run --tty --rm --user $$(id -u):$$(id -g) \
@@ -77,7 +77,7 @@ protoc-app: clean-app
 			--pyi_out=/src/app/proto \
 			--python_out=/src/app/proto \
 			permission.proto \
-			guildService.proto
+			service.proto
 
 protoc: protoc-apidocs protoc-gateway protoc-app
 

@@ -28,8 +28,8 @@ from accelbyte_grpc_plugin.app import (
 )
 from accelbyte_grpc_plugin.ctypes import PermissionAction
 
-from .proto.guildService_pb2_grpc import (
-    add_GuildServiceServicer_to_server,
+from .proto.service_pb2_grpc import (
+    add_ServiceServicer_to_server,
 )
 from .services.guild_service import (
     AsyncGuildService,
@@ -112,7 +112,7 @@ async def main(port: int, gateway: bool, gateway_file: str, gateway_entrypoint: 
         AppOptionGRPCService(
             full_name=AsyncGuildService.full_name,
             service=AsyncGuildService(sdk=sdk, logger=logger),
-            add_service_fn=add_GuildServiceServicer_to_server,
+            add_service_fn=add_ServiceServicer_to_server,
         )
     )
 

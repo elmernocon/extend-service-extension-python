@@ -12,7 +12,7 @@ from accelbyte_py_sdk.core import (
     HttpxHttpClient,
 )
 from accelbyte_py_sdk.services import auth as auth_service
-from app.proto.guildService_pb2 import (
+from app.proto.service_pb2 import (
     CreateOrUpdateGuildProgressRequest,
     CreateOrUpdateGuildProgressResponse,
     GetGuildProgressRequest,

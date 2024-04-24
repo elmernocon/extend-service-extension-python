@@ -392,14 +392,6 @@ $RECYCLE.BIN/
 # JetBrains IDE
 .idea/
 
-# Generated Proto files
-*_grpc.py
-*_pb2.py
-*_pb2.pyi
-*_pb2_grpc.py
-*.pb.go
-*.pb.gw.go
-
 # Virtual Environments
 venv*/
 
