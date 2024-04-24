@@ -7,7 +7,7 @@ PYTHONX := python
 
 IMAGE_NAME := $(shell basename "$$(pwd)")-app
 BUILDER := $(IMAGE_NAME)-builder
-PYTHON_VERSION := 3.10
+PYTHON_VERSION := 3.9
 
 VENV_DIR := venv
 SOURCE_DIR := src
@@ -90,9 +90,9 @@ test: venv proto
 			-c 'ln -sf $$(which python) ${VENV_DIR}/bin/python-docker \
 					&& PYTHONPATH=${SOURCE_DIR}:${TEST_DIR} ${VENV_DIR}/bin/python-docker -m app_tests'
 
-test_functional_local_hosted: proto
+test_sample_local_hosted: proto
 	@test -n "$(ENV_PATH)" || (echo "ENV_PATH is not set"; exit 1)
-	docker build --tag service-extension-test-functional -f test/functional/Dockerfile test/functional && \
+	docker build --tag service-extension-test-functional -f test/sample/Dockerfile test/sample && \
 	docker run --rm -t \
 		--env-file $(ENV_PATH) \
 		-e HOME=/data \
@@ -100,14 +100,14 @@ test_functional_local_hosted: proto
 		-e GOPATH=/data/.cache/mod \
 		-u $$(id -u):$$(id -g) \
 		-v $(PROJECT_DIR):/data \
-		-w /data service-extension-test-functional bash ./test/functional/test-local-hosted.sh
+		-w /data service-extension-test-functional bash ./test/sample/test-local-hosted.sh
 
-test_functional_accelbyte_hosted: proto
+test_sample_accelbyte_hosted: proto
 	@test -n "$(ENV_PATH)" || (echo "ENV_PATH is not set"; exit 1)
 ifeq ($(shell uname), Linux)
 	$(eval DARGS := -u $$(shell id -u):$$(shell id -g) --group-add $$(shell getent group docker | cut -d ':' -f 3))
 endif
-	docker build --tag service-extension-test-functional -f test/functional/Dockerfile test/functional && \
+	docker build --tag service-extension-test-functional -f test/sample/Dockerfile test/sample && \
 	docker run --rm -t \
 		--env-file $(ENV_PATH) \
 		-e HOME=/data \
@@ -118,4 +118,4 @@ endif
 		$(DARGS) \
 		-v /var/run/docker.sock:/var/run/docker.sock \
 		-v $(PROJECT_DIR):/data \
-		-w /data service-extension-test-functional bash ./test/functional/test-accelbyte-hosted.sh
+		-w /data service-extension-test-functional bash ./test/sample/test-accelbyte-hosted.sh
