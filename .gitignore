@@ -401,3 +401,5 @@ venv*/
 # Others
 .docker/
 .local/
+
+gateway/grpc_gateway

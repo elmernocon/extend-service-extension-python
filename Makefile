@@ -7,6 +7,7 @@ PYTHONX := python
 
 IMAGE_NAME := $(shell basename "$$(pwd)")-app
 BUILDER := $(IMAGE_NAME)-builder
+PYTHON_VERSION := 3.10
 
 VENV_DIR := venv
 SOURCE_DIR := src
@@ -14,88 +15,62 @@ TEST_DIR := test
 
 PROJECT_DIR ?= $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
 
-.PHONY: venv test
-
-clean-apidocs:
-	rm -rfv apidocs/*
-
-clean-app:
-	find src -type f \( -iname '*_pb2.py' -o -iname '*_pb2.pyi' -o -iname '*_pb2_grpc.py' \) -delete
-
-clean-gateway:
-	rm -rfv gateway/pkg/pb/*
-
-clean: clean-apidocs clean-app clean-gateway
-
-protoc-apidocs: clean-apidocs
-	docker run --tty --rm --user $$(id -u):$$(id -g) \
-		--volume $(PROJECT_DIR)/proto:/proto \
-		--volume $(PROJECT_DIR)/apidocs:/apidocs \
-		rvolosatovs/protoc:4.1.0 \
-			--proto_path=/proto/app \
-			--openapiv2_out /apidocs \
-			--openapiv2_opt logtostderr=true \
-			--openapiv2_opt use_go_templates=true \
-			service.proto
-
-protoc-gateway: clean-gateway
-	mkdir -p gateway/pkg/pb
-	docker run --tty --rm --user $$(id -u):$$(id -g) \
-		--volume $(PROJECT_DIR)/proto:/proto \
-		--volume $(PROJECT_DIR)/gateway:/gateway \
-		rvolosatovs/protoc:4.1.0 \
-			--proto_path=/proto/app \
-			--go_out=/gateway/pkg/pb \
-			--go_opt=paths=source_relative \
-			--go-grpc_out=require_unimplemented_servers=false:/gateway/pkg/pb \
-			--go-grpc_opt=paths=source_relative \
-			--grpc-gateway_out=logtostderr=true:/gateway/pkg/pb \
-			--grpc-gateway_opt paths=source_relative \
-			permission.proto \
-			service.proto
-
-protoc-app: clean-app
-	docker run --tty --rm --user $$(id -u):$$(id -g) \
-		--volume $(PROJECT_DIR)/proto:/proto \
-		--volume $(PROJECT_DIR)/src:/src \
-		rvolosatovs/protoc:4.1.0 \
-			--proto_path=google/api=/proto/google/api \
-			--proto_path=protoc-gen-openapiv2/options=/proto/protoc-gen-openapiv2/options \
-			--grpc-python_out=/src \
-			--pyi_out=/src \
-			--python_out=/src \
-			google/api/annotations.proto \
-			google/api/http.proto \
-			protoc-gen-openapiv2/options/annotations.proto \
-			protoc-gen-openapiv2/options/openapiv2.proto
-	docker run --tty --rm --user $$(id -u):$$(id -g) \
-		--volume $(PROJECT_DIR)/proto:/proto \
-		--volume $(PROJECT_DIR)/src:/src \
-		rvolosatovs/protoc:4.1.0 \
-			--proto_path=/proto/app \
-			--grpc-python_out=/src/app/proto \
-			--pyi_out=/src/app/proto \
-			--python_out=/src/app/proto \
-			permission.proto \
-			service.proto
-
-protoc: protoc-apidocs protoc-gateway protoc-app
+.PHONY: proto test venv
 
 venv:
-	python3.9 -m venv ${VENV_DIR} \
+	python${PYTHON_VERSION} -m venv ${VENV_DIR} \
 			&& ${VENV_DIR}/bin/pip install -r requirements-dev.txt
 
-build: protoc
+proto:
+	docker run -t --rm -u $$(id -u):$$(id -g) \
+		-v $$(pwd):/build \
+		-w /build \
+		--entrypoint /bin/bash \
+		rvolosatovs/protoc:4.1.0 \
+			proto.sh
 
-run: venv protoc
-	docker run --rm -it -u $$(id -u):$$(id -g) -v $(PROJECT_DIR):/data -w /data -e HOME=/data --entrypoint /bin/sh python:3.9-slim \
-			-c 'ln -sf $$(which python) ${VENV_DIR}/bin/python-docker \
-					&& PYTHONPATH=${SOURCE_DIR} GRPC_VERBOSITY=debug ${VENV_DIR}/bin/python-docker -m app'
+build_server: proto
+	
+build_gateway: proto
+	docker run -t --rm -u $$(id -u):$$(id -g) \
+		-e GOCACHE=/data/.cache/go-cache \
+		-e GOPATH=/data/.cache/go-path \
+		-v $$(pwd):/data \
+		-w /data/gateway \
+		golang:1.20-alpine3.19 \
+		go build -o grpc_gateway
 
-help: venv protoc
-	docker run --rm -t -u $$(id -u):$$(id -g) -v $(PROJECT_DIR):/data -w /data -e HOME=/data --entrypoint /bin/sh python:3.9-slim \
+run_server: venv proto
+	docker run --rm -it -u $$(id -u):$$(id -g) \
+			-e HOME=/data \
+			--env-file .env \
+			-v $(PROJECT_DIR):/data \
+			-w /data \
+			--entrypoint /bin/sh \
+			-p 6565:6565 \
+			-p 8080:8080 \
+			python:${PYTHON_VERSION}-slim \
+					-c 'ln -sf $$(which python) ${VENV_DIR}/bin/python-docker \
+							&& PYTHONPATH=${SOURCE_DIR} GRPC_VERBOSITY=debug ${VENV_DIR}/bin/python-docker -m app'
+
+run_gateway: proto
+	docker run -it --rm -u $$(id -u):$$(id -g) \
+		-e GOCACHE=/data/.cache/go-cache \
+		-e GOPATH=/data/.cache/go-path \
+		--env-file .env \
+		-v $$(pwd):/data \
+		-w /data/gateway \
+		-p 8000:8000 \
+		--add-host host.docker.internal:host-gateway \
+		golang:1.20-alpine3.19 \
+				go run main.go --grpc-addr host.docker.internal:6565
+
+help: venv proto
+	docker run --rm -t -u $$(id -u):$$(id -g) -v $(PROJECT_DIR):/data -w /data -e HOME=/data --entrypoint /bin/sh python:${PYTHON_VERSION}-slim \
 			-c 'ln -sf $$(which python) ${VENV_DIR}/bin/python-docker \
 					&& PYTHONPATH=${SOURCE_DIR} ${VENV_DIR}/bin/python-docker -m app --help'
+
+build: build_server build_gateway
 
 imagex:
 	docker buildx inspect $(BUILDER) || docker buildx create --name $(BUILDER) --use
@@ -110,8 +85,8 @@ imagex_push:
 	docker buildx build --tag $(REPO_URL):$(IMAGE_TAG) --platform linux/amd64 --push .
 	docker buildx rm --keep-state $(BUILDER)
 
-test: venv protoc
-	docker run --rm -t -u $$(id -u):$$(id -g) -v $(PROJECT_DIR):/data -w /data -e HOME=/data --entrypoint /bin/sh python:3.9-slim \
+test: venv proto
+	docker run --rm -t -u $$(id -u):$$(id -g) -v $(PROJECT_DIR):/data -w /data -e HOME=/data --entrypoint /bin/sh python:${PYTHON_VERSION}-slim \
 			-c 'ln -sf $$(which python) ${VENV_DIR}/bin/python-docker \
 					&& PYTHONPATH=${SOURCE_DIR}:${TEST_DIR} ${VENV_DIR}/bin/python-docker -m app_tests'
 
