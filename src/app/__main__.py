@@ -31,8 +31,8 @@ from accelbyte_grpc_plugin.ctypes import PermissionAction
 from .proto.service_pb2_grpc import (
     add_ServiceServicer_to_server,
 )
-from .services.guild_service import (
-    AsyncGuildService,
+from .services.my_service import (
+    AsyncService,
 )
 from .utils import create_env
 
@@ -110,8 +110,8 @@ async def main(port: int, gateway: bool, gateway_file: str, gateway_entrypoint: 
     options = create_options(env=env, logger=logger)
     options.append(
         AppOptionGRPCService(
-            full_name=AsyncGuildService.full_name,
-            service=AsyncGuildService(sdk=sdk, logger=logger),
+            full_name=AsyncService.full_name,
+            service=AsyncService(sdk=sdk, logger=logger),
             add_service_fn=add_ServiceServicer_to_server,
         )
     )

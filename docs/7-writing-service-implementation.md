@@ -4,7 +4,7 @@ Now that we have defined our service, the next step is to implement our service.
 This is where we define the actual logic of our gRPC methods.
 You can read more information related to Python gRPC [here](https://grpc.io/docs/languages/python/basics/).
 
-We'll be doing this in the `src/app/services/guild_service.py` file.
+We'll be doing this in the `src/app/services/service.py` file.
 
 Here's a brief outline of what this chapter will cover:
 
@@ -25,7 +25,7 @@ from ..proto.service_pb2 import (
 
 from ..proto.service_pb2_grpc import ServiceServicer
 
-class AsyncGuildService(ServiceServicer):
+class AsyncService(ServiceServicer):
     full_name: str = DESCRIPTOR.services_by_name["Service"].full_name
 
     # Implement your service logic in here.

@@ -98,7 +98,7 @@ async def CreateOrUpdateGuildProgress(
     return result
 ```
 
-For more accurate details how it was implemented please refer to [src/app/services/guild_service.py](../src/app/services/guild_service.py)
+For more accurate details how it was implemented please refer to [src/app/services/service.py](../src/app/services/service.py)
 
 That's it! You've now integrated AccelByte's CloudSave into your GuildService. 
 You can now use CloudSave to save and retrieve guild progress, along with any other 

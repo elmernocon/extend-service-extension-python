@@ -27,7 +27,7 @@ from ..proto.service_pb2 import (
 from ..proto.service_pb2_grpc import ServiceServicer
 
 
-class AsyncGuildService(ServiceServicer):
+class AsyncService(ServiceServicer):
     full_name: str = DESCRIPTOR.services_by_name["Service"].full_name
 
     def __init__(self, sdk: AccelByteSDK, logger: Logger) -> None:

@@ -18,11 +18,11 @@ from app.proto.service_pb2 import (
     GetGuildProgressRequest,
     GetGuildProgressResponse,
 )
-from app.services.guild_service import AsyncGuildService
+from app.services.my_service import AsyncService
 from app.utils import create_env
 
 
-class AsyncGuildServiceTestCase(IsolatedAsyncioTestCase):
+class AsyncServiceTestCase(IsolatedAsyncioTestCase):
     async def asyncSetUp(self) -> None:
         env = create_env()
 
@@ -41,7 +41,7 @@ class AsyncGuildServiceTestCase(IsolatedAsyncioTestCase):
             self.fail(str(error))
 
         self.logger = logging.getLogger("tests")
-        self.service = AsyncGuildService(sdk=self.sdk, logger=self.logger)
+        self.service = AsyncService(sdk=self.sdk, logger=self.logger)
 
     async def asyncTearDown(self) -> None:
         self.sdk.reset()
