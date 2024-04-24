@@ -1,3 +1,13 @@
+# gRPC Gateway Gen
+FROM --platform=$BUILDPLATFORM rvolosatovs/protoc:4.1.0 as grpc-gateway-gen
+WORKDIR /build
+COPY gateway gateway
+COPY proto proto
+COPY src src
+COPY proto.sh .
+RUN bash proto.sh
+
+
 # gRPC Gateway Builder
 FROM --platform=$BUILDPLATFORM golang:1.20 as grpc-gateway-builder
 ARG TARGETOS
@@ -9,6 +19,8 @@ WORKDIR /build
 COPY gateway/go.mod gateway/go.sum .
 RUN go mod download
 COPY gateway/ .
+RUN rm -rf pkg/pb
+COPY --from=grpc-gateway-gen /build/gateway/pkg/pb ./pkg/pb
 RUN go build -v -o /output/$TARGETOS/$TARGETARCH/grpc_gateway .
 
 
@@ -21,7 +33,7 @@ ENV PYTHONUNBUFFERED=1
 WORKDIR /app
 COPY requirements.txt requirements.txt
 RUN python -m pip install -r requirements.txt
-COPY apidocs apidocs
+COPY --from=grpc-gateway-gen /build/gateway/apidocs ./apidocs
 COPY gateway/third_party third_party
 COPY src .
 COPY --from=grpc-gateway-builder /output/$TARGETOS/$TARGETARCH/grpc_gateway .
