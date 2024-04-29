@@ -25,7 +25,7 @@ RUN go build -v -o /output/$TARGETOS/$TARGETARCH/grpc_gateway .
 
 
 # Extend App
-FROM python:3.9-slim-bullseye
+FROM python:3.10-slim-bullseye
 ARG TARGETOS
 ARG TARGETARCH
 ENV PYTHONDONTWRITEBYTECODE=1

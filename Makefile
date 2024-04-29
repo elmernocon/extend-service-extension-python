@@ -7,7 +7,7 @@ SHELL := /bin/bash
 IMAGE_NAME := $(shell basename "$$(pwd)")-app
 BUILDER := extend-builder
 
-PYTHON_VERSION := 3.9
+PYTHON_VERSION := 3.10
 
 TEST_SAMPLE_CONTAINER_NAME := sample-service-extension-test
 
