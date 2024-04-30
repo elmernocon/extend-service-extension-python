@@ -19,7 +19,7 @@ pipeline {
   stages {
     stage('Prepare') {
       agent {
-        label "master"
+        label "extend-builder-ci"
       }
       steps {
         script {
@@ -37,7 +37,7 @@ pipeline {
     }
     stage('Lint') {
       agent {
-        label "justice-codegen-sdk"
+        label "extend-builder-ci"
       }
       stages {
         stage('Lint Commits') {
@@ -61,7 +61,7 @@ pipeline {
     }
     stage('Build') {
       agent {
-        label "justice-codegen-sdk"
+        label "extend-builder-ci"
       }
       steps {
         sh "make build"
