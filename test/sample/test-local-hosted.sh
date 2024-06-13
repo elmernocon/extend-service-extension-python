@@ -19,7 +19,7 @@ trap clean_up EXIT
 echo '# Build and run Extend app locally'
 
 python -m pip install -r requirements.txt
-(cd gateway && go build -o gateway && BASE_PATH=/$APP_BASE_PATH ./gateway) & GATEWAY_PID=$!
+(cd gateway && go build -buildvcs=false -o gateway && BASE_PATH=/$APP_BASE_PATH ./gateway) & GATEWAY_PID=$!
 (cd src && python -m app) & SERVICE_PID=$!
 
 (for _ in {1..12}; do bash -c "timeout 1 echo > /dev/tcp/127.0.0.1/8000" 2>/dev/null && exit 0 || sleep 5s; done; exit 1)
