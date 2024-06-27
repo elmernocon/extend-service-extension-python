@@ -1,5 +1,5 @@
 # gRPC Gateway Gen
-FROM --platform=$BUILDPLATFORM rvolosatovs/protoc:4.1.0 as grpc-gateway-gen
+FROM --platform=$BUILDPLATFORM rvolosatovs/protoc:4.1.0 AS grpc-gateway-gen
 WORKDIR /build
 COPY gateway gateway
 COPY proto proto
@@ -9,7 +9,7 @@ RUN bash proto.sh
 
 
 # gRPC Gateway Builder
-FROM --platform=$BUILDPLATFORM golang:1.20 as grpc-gateway-builder
+FROM --platform=$BUILDPLATFORM golang:1.20 AS grpc-gateway-builder
 ARG TARGETOS
 ARG TARGETARCH
 ARG GOOS=$TARGETOS
