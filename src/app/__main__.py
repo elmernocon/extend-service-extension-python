@@ -195,35 +195,19 @@ def create_options(env: Env, logger: Logger) -> List[AppOption]:
         with env.prefixed("AUTH_"):
             if env.bool("ENABLED", DEFAULT_PLUGIN_GRPC_SERVER_AUTH_ENABLED):
                 from accelbyte_py_sdk import AccelByteSDK
-                from accelbyte_py_sdk.core import (
-                    MyConfigRepository,
-                    InMemoryTokenRepository,
-                )
-                from accelbyte_py_sdk.token_validation.caching import (
-                    CachingTokenValidator,
-                )
-                from accelbyte_py_sdk.services.auth import (
-                    login_client,
-                )
-                from accelbyte_grpc_plugin.interceptors.authorization import (
-                    AuthorizationServerInterceptor,
-                )
+                from accelbyte_py_sdk.core import MyConfigRepository, InMemoryTokenRepository
+                from accelbyte_py_sdk.token_validation.caching import CachingTokenValidator
+                from accelbyte_py_sdk.services.auth import login_client, LoginClientTimer
+                from accelbyte_grpc_plugin.interceptors.authorization import AuthorizationServerInterceptor
 
+                config = MyConfigRepository(base_url, client_id, client_secret, namespace)
+                token = InMemoryTokenRepository()
                 sdk = AccelByteSDK()
-                sdk.initialize(
-                    options={
-                        "config": MyConfigRepository(
-                            base_url=base_url,
-                            client_id=client_id,
-                            client_secret=client_secret,
-                            namespace=namespace,
-                        ),
-                        "token": InMemoryTokenRepository(),
-                    }
-                )
+                sdk.initialize(options={"config": config, "token": token})
                 result, error = login_client(sdk=sdk)
                 if error:
                     raise Exception(str(error))
+                sdk.timer = LoginClientTimer(2880, repeats=-1, autostart=True, sdk=sdk)
                 options.append(
                     AppOptionGRPCInterceptor(
                         interceptor=AuthorizationServerInterceptor(
