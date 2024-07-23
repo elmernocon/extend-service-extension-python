@@ -90,24 +90,27 @@ def start_gateway_internal(gateway_file: str, gateway_entrypoint: str) -> None:
 async def main(port: int, gateway: bool, gateway_file: str, gateway_entrypoint: str, **kwargs) -> None:
     env = create_env(**kwargs)
 
+    config = DictConfigRepository(dict(env.dump()))
+    token = InMemoryTokenRepository()
     http = HttpxHttpClient()
     http.client.follow_redirects = True
     sdk = AccelByteSDK()
     sdk.initialize(
         options={
-            "config": DictConfigRepository(dict(env.dump())),
-            "token": InMemoryTokenRepository(),
+            "config": config,
+            "token": token,
             "http": http,
         }
     )
     _, error = await auth_service.login_client_async(sdk=sdk)
     if error:
         raise Exception(str(error))
+    sdk.timer = auth_service.LoginClientTimer(2880, repeats=-1, autostart=True, sdk=sdk)
 
     logger = logging.getLogger("app")
     logger.setLevel(logging.INFO)
     logger.addHandler(logging.StreamHandler())
-    options = create_options(env=env, logger=logger)
+    options = create_options(sdk=sdk, env=env, logger=logger)
     options.append(
         AppOptionGRPCService(
             full_name=AsyncService.full_name,
@@ -158,7 +161,7 @@ def parse_args():
     return result
 
 
-def create_options(env: Env, logger: Logger) -> List[AppOption]:
+def create_options(sdk: AccelByteSDK, env: Env, logger: Logger) -> List[AppOption]:
     options: List[AppOption] = []
 
     with env.prefixed("AB_"):
@@ -194,20 +197,9 @@ def create_options(env: Env, logger: Logger) -> List[AppOption]:
     with env.prefixed("PLUGIN_GRPC_SERVER_"):
         with env.prefixed("AUTH_"):
             if env.bool("ENABLED", DEFAULT_PLUGIN_GRPC_SERVER_AUTH_ENABLED):
-                from accelbyte_py_sdk import AccelByteSDK
-                from accelbyte_py_sdk.core import MyConfigRepository, InMemoryTokenRepository
                 from accelbyte_py_sdk.token_validation.caching import CachingTokenValidator
-                from accelbyte_py_sdk.services.auth import login_client, LoginClientTimer
                 from accelbyte_grpc_plugin.interceptors.authorization import AuthorizationServerInterceptor
 
-                config = MyConfigRepository(base_url, client_id, client_secret, namespace)
-                token = InMemoryTokenRepository()
-                sdk = AccelByteSDK()
-                sdk.initialize(options={"config": config, "token": token})
-                result, error = login_client(sdk=sdk)
-                if error:
-                    raise Exception(str(error))
-                sdk.timer = LoginClientTimer(2880, repeats=-1, autostart=True, sdk=sdk)
                 options.append(
                     AppOptionGRPCInterceptor(
                         interceptor=AuthorizationServerInterceptor(
