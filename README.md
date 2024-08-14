@@ -11,76 +11,111 @@ flowchart LR
    GW --- SV
 ```
 
-`AccelByte Gaming Services` (AGS) capabilities can be extended with 
-`Extend Service Extension` apps. An `Extend Service Extension` app is 
-essentially a custom REST API service built using a combination of 
-[gRPC Gateway and gRPC Server](https://github.com/grpc-ecosystem/grpc-gateway?tab=readme-ov-file#about).
+`AccelByte Gaming Services` (AGS) capabilities can be enhanced using 
+`Extend Service Extension` apps. An `Extend Service Extension` app is a 
+REST API service built using a combination of 
+[gRPC Server and gRPC Gateway](https://github.com/grpc-ecosystem/grpc-gateway?tab=readme-ov-file#about).
 
 ## Overview
 
-This repository serves as a template project for an `Extend Service Extension` 
-app written in `Python`. You can clone this repository and start creating 
-endpoints by editing the gRPC proto file and implementing your own logic.
+This repository provides a project template for an `Extend Service Extension` 
+app written in `Python`. It includes an example of a custom guild service which has 
+two endpoints to create and get guild progress data. Additionally, it comes 
+with built-in instrumentation for observability, ensuring that metrics, traces, 
+and logs are available upon deployment.
 
-By using this repository as a template project, you will get basic 
-authentication and authorization implemented out-of-the-box. You will also get 
-some instrumentation for observability so that metrics, traces, and 
-logs will be available when the app is deployed. Since the source code is 
-included, you can customize them according to your needs.
-
-As an example to get you started, this template project contains a sample 
-custom guild service which has two endpoints to create and get guild progress 
-data.
+You can clone this repository to begin developing your own 
+`Extend Service Extension` app. Simply modify this project by defining your 
+endpoints in `service.proto` file and implementing the handlers for those 
+endpoints.
 
 ## Prerequisites
 
-1. Windows 11 WSL2 or Linux Ubuntu 22.04 or macOS 14+ with the following tools installed.
+1. Windows 11 WSL2 or Linux Ubuntu 22.04 or macOS 14+ with the following tools installed:
 
    a. Bash
 
-      ```
-      bash --version
+      - On Windows WSL2 or Linux Ubuntu:
 
-      GNU bash, version 5.1.16(1)-release (x86_64-pc-linux-gnu)
-      ...
-      ```
+         ```
+         bash --version
+
+         GNU bash, version 5.1.16(1)-release (x86_64-pc-linux-gnu)
+         ...
+         ```
+
+      - On macOS:
+
+         ```
+         bash --version
+
+         GNU bash, version 3.2.57(1)-release (arm64-apple-darwin23)
+         ...
+         ```
 
    b. Make
 
-      - To install from Ubuntu repository, run: `sudo apt update && sudo apt install make` 
+      - On Windows WSL2 or Linux Ubuntu:
 
-      ```
-      make --version
+         To install from the Ubuntu repository, run `sudo apt update && sudo apt install make`.
 
-      GNU Make 4.3
-      ...
-      ```
+         ```
+         make --version
 
-   c. Docker (Docker Engine v23.0+)
+         GNU Make 4.3
+         ...
+         ```
 
-      - To install from Ubuntu repository, run: `sudo apt update && sudo apt install docker.io docker-buildx docker-compose-v2`
-      - Add your user to `docker` group: `sudo usermod -aG docker $USER`
-      - Log out and log back in so that the changes take effect
+      - On macOS:
 
-      ```
-      docker version
+         ```
+         make --version
 
-      ...
-      Server: Docker Desktop
-       Engine:
-        Version:          24.0.5
-      ...
-      ```
+         GNU Make 3.81
+         ...
+         ```
+
+   c. Docker (Docker Desktop 4.30+/Docker Engine v23.0+)
+   
+      - On Linux Ubuntu:
+
+         1. To install from the Ubuntu repository, run `sudo apt update && sudo apt install docker.io docker-buildx docker-compose-v2`.
+         2. Add your user to the `docker` group: `sudo usermod -aG docker $USER`.
+         3. Log out and log back in to allow the changes to take effect.
+
+      - On Windows or macOS:
+
+         Follow Docker's documentation on installing the Docker Desktop on [Windows](https://docs.docker.com/desktop/install/windows-install/) or [macOS](https://docs.docker.com/desktop/install/mac-install/).
+
+         ```
+         docker version
+
+         ...
+         Server: Docker Desktop
+            Engine:
+            Version:          24.0.5
+         ...
+         ```
 
    d. Python 3.10
 
-      - To install from Ubuntu repository, run: `sudo apt update && sudo apt install python3 python3-venv`
+      - On Linux Ubuntu:
 
-      ```
-      python3 --version
+         To install from the Ubuntu repository, run `sudo apt update && sudo apt install python3 python3-venv`.
 
-      Python 3.10.12
-      ```
+      - On Windows or macOS:
+
+         Use the available installer [here](https://www.python.org/downloads/).
+
+         ```
+         python3 --version
+
+         Python 3.10.12
+         ```
+
+   e. [extend-helper-cli](https://github.com/AccelByte/extend-helper-cli)
+
+      - Use the available binary from [extend-helper-cli](https://github.com/AccelByte/extend-helper-cli/releases).
 
    > :exclamation: In macOS, you may use [Homebrew](https://brew.sh/) to easily install some of the tools above.
 
@@ -108,8 +143,7 @@ data.
 
 ## Setup
 
-To be able to run the sample custom guild service, you will need to follow these 
-setup steps.
+To be able to run this app, you will need to follow these setup steps.
 
 1. Create a docker compose `.env` file by copying the content of 
    [.env.template](.env.template) file.
@@ -132,16 +166,11 @@ setup steps.
    BASE_PATH='/guild'                        # The base path used for the app
    ```
  
-   > :exclamation: **In this sample app, PLUGIN_GRPC_SERVER_AUTH_ENABLED is `true` by default**: 
-   If it is set to `false`, the endpoint `permission.action` and 
-   `permission.resource` validation will be disabled and the endpoint can be 
-   accessed without a valid access token. This option is provided for 
-   development purpose only. For more information, see 
-   [creating-new-endpoint](docs/6-creating-new-endpoint.md#6-creating-a-new-endpoint).
+   > :exclamation: **In this app, PLUGIN_GRPC_SERVER_AUTH_ENABLED is `true` by default**: If it is set to `false`, the endpoint `permission.action` and `permission.resource`  validation will be disabled and the endpoint can be accessed without a valid access token. This option is provided for development purpose only. For more information, see [creating-new-endpoint](docs/6-creating-new-endpoint.md#6-creating-a-new-endpoint).
    
 ## Building
 
-To build this sample app, use the following command.
+To build this app, use the following command.
 
 ```shell
 make build
@@ -149,7 +178,7 @@ make build
 
 ## Running
 
-To (build and) run this sample app in a container, use the following command.
+To (build and) run this app in a container, use the following command.
 
 ```shell
 docker compose up --build
@@ -159,17 +188,16 @@ docker compose up --build
 
 ### Test in Local Development Environment
 
-The sample custom guild service included in this template project can be tested 
-locally using Swagger UI.
+This app can be tested locally through the Swagger UI.
 
-1. Run this `Extend Service Extension` sample app by using the command below.
+1. Run this app by using the command below.
 
    ```shell
    docker compose up --build
    ```
-   
-2. If **PLUGIN_GRPC_SERVER_AUTH_ENABLED** is `true`, you will need the a user 
-   access token to access the REST API service. You can generate the user access 
+
+2. If **PLUGIN_GRPC_SERVER_AUTH_ENABLED** is `true`: Get access token to 
+   be able to access the REST API service. You can generate the user access 
    token using [getusertoken.sh](getusertoken.sh) shell script. To run it, you
    will need to set the following environment variables.
 
@@ -224,11 +252,12 @@ To be able to see the how the observability works in this sample app locally, th
    ```
 
    > :warning: **Make sure to install docker loki plugin beforehand**: Otherwise,
-   this sample app will not be able to run. This is required so that container logs
-   can flow to the `loki` service within `grpc-plugin-dependencies` stack. 
-   Use this command to install docker loki plugin: `docker plugin install grafana/loki-docker-driver:latest --alias loki --grant-all-permissions`.
+   this app will not be able to run. This is required so that container 
+   logs can flow to the `loki` service within `grpc-plugin-dependencies` stack. 
+   Use this command to install docker loki plugin: 
+   `docker plugin install grafana/loki-docker-driver:latest --alias loki --grant-all-permissions`.
 
-2. Clone and run [grpc-plugin-dependencies](https://github.com/AccelByte/grpc-plugin-dependencies) stack alongside this sample app. After this, Grafana 
+2. Clone and run [grpc-plugin-dependencies](https://github.com/AccelByte/grpc-plugin-dependencies) stack alongside this app. After this, Grafana 
 will be accessible at http://localhost:3000.
 
    ```
@@ -261,7 +290,7 @@ To deploy this app to AGS, follow the steps below.
    can also be copied from `Repository Authentication Command` under the 
    corresponding app detail page.
 
-4. Build and push sample app docker image to AccelByte ECR using the following command.
+4. Build and push this app docker image to AccelByte ECR using the following command.
    
    ```
    extend-helper-cli image-upload --work-dir <my-project-dir> --namespace <my-game> --app <my-app> --image-tag v0.0.1
@@ -284,5 +313,5 @@ For more information on how to deploy an `Extend Service Extension` app, see
 
 ## Next Step
 
-Proceed to modify this template project and create your own endpoints. See 
+Proceed to modify this project template and create your own endpoints. See 
 [here](./docs/0-toc.md) for more details.
