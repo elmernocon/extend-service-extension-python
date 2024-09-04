@@ -64,29 +64,6 @@ DEFAULT_PLUGIN_GRPC_SERVER_LOGGING_ENABLED: bool = False
 DEFAULT_PLUGIN_GRPC_SERVER_METRICS_ENABLED: bool = True
 
 
-def start_gateway(gateway_file: str, gateway_entrypoint: str) -> None:
-    thread = Thread(
-        target=start_gateway_internal,
-        args=(gateway_file, gateway_entrypoint)
-    )
-    thread.start()
-
-
-def start_gateway_internal(gateway_file: str, gateway_entrypoint: str) -> None:
-    try:
-        lib = cdll.LoadLibrary(gateway_file)
-        entrypoint = getattr(lib, gateway_entrypoint)
-    except Exception as error:
-        print(error)
-        raise error
-
-    try:
-        entrypoint()
-    except Exception as error:
-        print(error)
-        raise error
-
-
 async def main(port: int, gateway: bool, gateway_file: str, gateway_entrypoint: str, **kwargs) -> None:
     env = create_env(**kwargs)
 
@@ -119,9 +96,6 @@ async def main(port: int, gateway: bool, gateway_file: str, gateway_entrypoint: 
         )
     )
 
-    if gateway:
-        start_gateway(gateway_file=gateway_file, gateway_entrypoint=gateway_entrypoint)
-
     app = App(port=port, env=env, logger=logger, options=options)
     await app.run()
 
@@ -135,27 +109,6 @@ def parse_args():
         type=int,
         required=False,
         help="[P]ort",
-    )
-    parser.add_argument(
-        "-g",
-        "--gateway",
-        action="store_true",
-        required=False,
-        help="Start [G]ateway",
-    )
-    parser.add_argument(
-        "--gateway_file",
-        default="./gateway.so",
-        type=str,
-        required=False,
-        help="Path to the gateway shared object file",
-    )
-    parser.add_argument(
-        "--gateway_entrypoint",
-        default="main",
-        type=str,
-        required=False,
-        help="Name of the gateway entrypoint",
     )
     result = vars(parser.parse_args())
     return result
