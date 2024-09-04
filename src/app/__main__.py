@@ -118,12 +118,7 @@ def create_options(sdk: AccelByteSDK, env: Env, logger: Logger) -> List[AppOptio
     options: List[AppOption] = []
 
     with env.prefixed("AB_"):
-        base_url = env.str("BASE_URL", DEFAULT_AB_BASE_URL)
         namespace = env.str("NAMESPACE", DEFAULT_AB_NAMESPACE)
-        client_id = env.str("CLIENT_ID", DEFAULT_AB_CLIENT_ID)
-        client_secret = env.str(
-            "CLIENT_SECRET", DEFAULT_AB_CLIENT_SECRET
-        )
 
     with env.prefixed("ENABLE_"):
         if env.bool("HEALTH_CHECK", DEFAULT_ENABLE_HEALTH_CHECK):
