@@ -64,7 +64,7 @@ DEFAULT_PLUGIN_GRPC_SERVER_LOGGING_ENABLED: bool = False
 DEFAULT_PLUGIN_GRPC_SERVER_METRICS_ENABLED: bool = True
 
 
-async def main(port: int, gateway: bool, gateway_file: str, gateway_entrypoint: str, **kwargs) -> None:
+async def main(port: int, **kwargs) -> None:
     env = create_env(**kwargs)
 
     config = DictConfigRepository(dict(env.dump()))
