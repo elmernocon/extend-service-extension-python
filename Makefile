@@ -1,4 +1,4 @@
-# Copyright (c) 2022 AccelByte Inc. All Rights Reserved.
+# Copyright (c) 2024 AccelByte Inc. All Rights Reserved.
 # This is licensed software from AccelByte Inc, for limitations
 # and restrictions contact your company contract manager.
 
@@ -11,15 +11,10 @@ PYTHON_VERSION := 3.10
 
 TEST_SAMPLE_CONTAINER_NAME := sample-service-extension-test
 
-VENV_DIR := venv
 SOURCE_DIR := src
 TEST_DIR := test
 
-.PHONY: proto test venv
-
-venv:
-	python${PYTHON_VERSION} -m venv ${VENV_DIR} \
-			&& ${VENV_DIR}/bin/pip install -r requirements-dev.txt
+.PHONY: proto test
 
 proto:
 	docker run -t --rm -u $$(id -u):$$(id -g) \
@@ -42,16 +37,16 @@ build_gateway: proto
 
 run_server:
 	docker run --rm -it -u $$(id -u):$$(id -g) \
-			-e HOME=/data \
-			--env-file .env \
-			-v $$(pwd):/data \
-			-w /data \
-			--entrypoint /bin/sh \
-			-p 6565:6565 \
-			-p 8080:8080 \
-			python:${PYTHON_VERSION}-slim \
-					-c 'ln -sf $$(which python) ${VENV_DIR}/bin/python-docker \
-							&& PYTHONPATH=${SOURCE_DIR} GRPC_VERBOSITY=debug ${VENV_DIR}/bin/python-docker -m app'
+		-e HOME=/data \
+		--env-file .env \
+		-v $$(pwd):/data \
+		-w /data \
+		--entrypoint /bin/sh \
+		-p 6565:6565 \
+		-p 8080:8080 \
+		python:${PYTHON_VERSION}-slim \
+		-c 'python -m pip install -r requirements.txt \
+			&& PYTHONPATH=${SOURCE_DIR}:${TEST_DIR} python -m app'
 
 run_gateway: proto
 	docker run -it --rm -u $$(id -u):$$(id -g) \
@@ -67,14 +62,14 @@ run_gateway: proto
 
 help:
 	docker run --rm -t \
-			-u $$(id -u):$$(id -g) \
-			-v $$(pwd):/data \
-			-w /data \
-			-e HOME=/data \
-			--entrypoint /bin/sh \
-			python:${PYTHON_VERSION}-slim \
-			-c 'ln -sf $$(which python) ${VENV_DIR}/bin/python-docker \
-					&& PYTHONPATH=${SOURCE_DIR} ${VENV_DIR}/bin/python-docker -m app --help'
+		-u $$(id -u):$$(id -g) \
+		-v $$(pwd):/data \
+		-w /data \
+		-e HOME=/data \
+		--entrypoint /bin/sh \
+		python:${PYTHON_VERSION}-slim \
+		-c 'python -m pip install -r requirements.txt \
+			&& PYTHONPATH=${SOURCE_DIR}:${TEST_DIR} python -m app --help'
 
 build: build_server build_gateway
 
@@ -91,33 +86,35 @@ imagex_push:
 	docker buildx build --tag $(REPO_URL):$(IMAGE_TAG) --platform linux/amd64 --push .
 	docker buildx rm --keep-state $(BUILDER)
 
-test:
+test_with_env:
+	@test -n "$(ENV_FILE_PATH)" || (echo "ENV_FILE_PATH is not set" ; exit 1)
 	docker run --rm -t \
-			-u $$(id -u):$$(id -g) \
-			-v $$(pwd):/data \
-			-w /data -e HOME=/data \
-			--entrypoint /bin/sh \
-			python:${PYTHON_VERSION}-slim \
-			-c 'ln -sf $$(which python) ${VENV_DIR}/bin/python-docker \
-					&& PYTHONPATH=${SOURCE_DIR}:${TEST_DIR} ${VENV_DIR}/bin/python-docker -m app_tests'
+		-u $$(id -u):$$(id -g) \
+		-v $$(pwd):/data \
+		-w /data -e HOME=/data \
+		--env-file $(ENV_FILE_PATH)  \
+		--entrypoint /bin/sh \
+		python:${PYTHON_VERSION}-slim \
+		-c 'python -m pip install -r requirements-dev.txt \
+			&& PYTHONPATH=${SOURCE_DIR}:${TEST_DIR} python -m app_tests'
 
 test_sample_local_hosted:
 	@test -n "$(ENV_PATH)" || (echo "ENV_PATH is not set"; exit 1)
 	docker build \
-			--tag $(TEST_SAMPLE_CONTAINER_NAME) \
-			-f test/sample/Dockerfile \
-			test/sample
+		--tag $(TEST_SAMPLE_CONTAINER_NAME) \
+		-f test/sample/Dockerfile \
+		test/sample
 	docker run --rm -t \
-			-u $$(id -u):$$(id -g) \
-			-e HOME=/data \
-			-e GOCACHE=/data/.cache/go-build \
-			-e GOPATH=/data/.cache/mod \
-			--env-file $(ENV_PATH) \
-			-v $$(pwd):/data \
-			-w /data \
-			--name $(TEST_SAMPLE_CONTAINER_NAME) \
-			$(TEST_SAMPLE_CONTAINER_NAME) \
-			bash ./test/sample/test-local-hosted.sh
+		-u $$(id -u):$$(id -g) \
+		-e HOME=/data \
+		-e GOCACHE=/data/.cache/go-build \
+		-e GOPATH=/data/.cache/mod \
+		--env-file $(ENV_PATH) \
+		-v $$(pwd):/data \
+		-w /data \
+		--name $(TEST_SAMPLE_CONTAINER_NAME) \
+		$(TEST_SAMPLE_CONTAINER_NAME) \
+		bash ./test/sample/test-local-hosted.sh
 
 test_sample_accelbyte_hosted:
 	@test -n "$(ENV_PATH)" || (echo "ENV_PATH is not set"; exit 1)
@@ -125,22 +122,22 @@ ifeq ($(shell uname), Linux)
 	$(eval DARGS := -u $$(shell id -u) --group-add $$(shell getent group docker | cut -d ':' -f 3))
 endif
 	docker build \
-			--tag $(TEST_SAMPLE_CONTAINER_NAME) \
-			-f test/sample/Dockerfile \
-			test/sample
+		--tag $(TEST_SAMPLE_CONTAINER_NAME) \
+		-f test/sample/Dockerfile \
+		test/sample
 	docker run --rm -t \
-			-e HOME=/data \
-			-e GOCACHE=/data/.cache/go-build \
-			-e GOPATH=/data/.cache/mod \
-			-e DOCKER_CONFIG=/tmp/.docker \
-			--env-file $(ENV_PATH) \
-			-v /var/run/docker.sock:/var/run/docker.sock \
-			-v $$(pwd):/data \
-			-w /data \
-			--name $(TEST_SAMPLE_CONTAINER_NAME) \
-			$(DARGS) \
-			$(TEST_SAMPLE_CONTAINER_NAME) \
-			bash ./test/sample/test-accelbyte-hosted.sh
+		-e HOME=/data \
+		-e GOCACHE=/data/.cache/go-build \
+		-e GOPATH=/data/.cache/mod \
+		-e DOCKER_CONFIG=/tmp/.docker \
+		--env-file $(ENV_PATH) \
+		-v /var/run/docker.sock:/var/run/docker.sock \
+		-v $$(pwd):/data \
+		-w /data \
+		--name $(TEST_SAMPLE_CONTAINER_NAME) \
+		$(DARGS) \
+		$(TEST_SAMPLE_CONTAINER_NAME) \
+		bash ./test/sample/test-accelbyte-hosted.sh
 
 test_docs_broken_links:
 	@test -n "$(SDK_MD_CRAWLER_PATH)" || (echo "SDK_MD_CRAWLER_PATH is not set" ; exit 1)
