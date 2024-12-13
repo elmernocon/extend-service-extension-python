@@ -13,6 +13,8 @@ RUN bash proto.sh
 
 # gRPC Gateway Builder
 FROM --platform=$BUILDPLATFORM golang:1.20 AS grpc-gateway-builder
+ARG TARGETOS
+ARG TARGETARCH
 ARG GOOS=$TARGETOS
 ARG GOARCH=$TARGETARCH
 ARG CGO_ENABLED=0
@@ -26,6 +28,9 @@ RUN go build -v -o /output/$TARGETOS/$TARGETARCH/grpc_gateway .
 
 # Extend App
 FROM ubuntu:22.04
+
+ARG TARGETOS
+ARG TARGETARCH
 
 RUN apt update && \
     apt install -y python3-pip python-is-python3 && \
