@@ -33,7 +33,7 @@ build_gateway: proto
 		-v $$(pwd):/data \
 		-w /data/gateway \
 		golang:1.20-alpine3.19 \
-		go build -o grpc_gateway
+		go build -modcacherw -o grpc_gateway
 
 run_server:
 	docker run --rm -it -u $$(id -u):$$(id -g) \
