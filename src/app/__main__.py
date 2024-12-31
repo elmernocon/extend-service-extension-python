@@ -4,10 +4,7 @@
 
 import asyncio
 import logging
-from argparse import ArgumentParser
-from ctypes import cdll
 from logging import Logger
-from threading import Thread
 from typing import List, Optional
 
 from environs import Env
@@ -64,8 +61,10 @@ DEFAULT_PLUGIN_GRPC_SERVER_LOGGING_ENABLED: bool = False
 DEFAULT_PLUGIN_GRPC_SERVER_METRICS_ENABLED: bool = True
 
 
-async def main(port: int, **kwargs) -> None:
+async def main(**kwargs) -> None:
     env = create_env(**kwargs)
+
+    port: int = env.int("PORT", DEFAULT_APP_PORT)
 
     config = DictConfigRepository(dict(env.dump()))
     token = InMemoryTokenRepository()
@@ -98,20 +97,6 @@ async def main(port: int, **kwargs) -> None:
 
     app = App(port=port, env=env, logger=logger, options=options)
     await app.run()
-
-
-def parse_args():
-    parser = ArgumentParser()
-    parser.add_argument(
-        "-p",
-        "--port",
-        default=DEFAULT_APP_PORT,
-        type=int,
-        required=False,
-        help="[P]ort",
-    )
-    result = vars(parser.parse_args())
-    return result
 
 
 def create_options(sdk: AccelByteSDK, env: Env, logger: Logger) -> List[AppOption]:
@@ -186,7 +171,7 @@ def create_options(sdk: AccelByteSDK, env: Env, logger: Logger) -> List[AppOptio
 
 
 def run() -> None:
-    asyncio.run(main(**parse_args()))
+    asyncio.run(main())
 
 
 if __name__ == "__main__":
