@@ -23,7 +23,6 @@ from accelbyte_grpc_plugin.app import (
     AppOptionGRPCInterceptor,
     AppOptionGRPCService,
 )
-from accelbyte_grpc_plugin.ctypes import PermissionAction
 
 from .proto.service_pb2_grpc import (
     add_ServiceServicer_to_server,
@@ -47,15 +46,8 @@ DEFAULT_ENABLE_REFLECTION: bool = True
 DEFAULT_ENABLE_ZIPKIN: bool = True
 
 DEFAULT_PLUGIN_GRPC_SERVER_AUTH_ENABLED: bool = True
-DEFAULT_PLUGIN_GRPC_SERVER_AUTH_RESOURCE: Optional[
-    str
-] = "ADMIN:NAMESPACE:{namespace}:CLOUDSAVE:RECORD"
-DEFAULT_PLUGIN_GRPC_SERVER_AUTH_ACTION: Optional[int] = int(
-    PermissionAction.CREATE
-    | PermissionAction.READ
-    | PermissionAction.UPDATE
-    | PermissionAction.DELETE
-)
+DEFAULT_PLUGIN_GRPC_SERVER_AUTH_RESOURCE: Optional[str] = None
+DEFAULT_PLUGIN_GRPC_SERVER_AUTH_ACTION: Optional[int] = None
 
 DEFAULT_PLUGIN_GRPC_SERVER_LOGGING_ENABLED: bool = False
 DEFAULT_PLUGIN_GRPC_SERVER_METRICS_ENABLED: bool = True
