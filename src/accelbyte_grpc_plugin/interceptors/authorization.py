@@ -29,15 +29,15 @@ class AuthorizationServerInterceptor(ServerInterceptor):
 
     def __init__(
         self,
-        resource: str,
-        action: int,
-        namespace: str,
         token_validator: TokenValidatorProtocol,
+        resource: Optional[str] = None,
+        action: Optional[int] = None,
+        namespace: Optional[str] = None,
     ) -> None:
+        self.token_validator = token_validator
         self.resource = resource
         self.action = action
         self.namespace = namespace
-        self.token_validator = token_validator
 
     async def intercept_service(
         self,
