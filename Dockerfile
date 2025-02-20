@@ -48,7 +48,7 @@ ENV PYTHONUNBUFFERED=1
 # Install pip requirements
 WORKDIR /app
 COPY requirements.txt requirements.txt
-RUN python -m pip install -r requirements.txt
+RUN python -m pip install --no-cache-dir --force-reinstall --requirement requirements.txt
 COPY --from=grpc-gateway-gen /build/gateway/apidocs ./apidocs
 COPY gateway/third_party third_party
 COPY src .
