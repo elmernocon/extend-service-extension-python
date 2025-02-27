@@ -11,6 +11,8 @@ from grpc.aio import ServerInterceptor
 from google.protobuf.descriptor import MethodDescriptor
 from google.protobuf.descriptor_pool import Default as DescriptorPool
 
+from accelbyte_grpc_plugin.utils import get_headers_from_metadata, get_propagator_header_keys
+
 from accelbyte_py_sdk.services.auth import parse_access_token
 from accelbyte_py_sdk.token_validation import TokenValidatorProtocol
 from accelbyte_py_sdk.token_validation._ctypes import (
@@ -77,15 +79,9 @@ class AuthorizationServerInterceptor(ServerInterceptor):
         if action is None:
             action = self.action
 
-        # noinspection PyUnresolvedReferences
-        authorization = next(
-            (
-                str(metadata.value)
-                for metadata in handler_call_details.invocation_metadata
-                if metadata.key == "authorization"
-            ),
-            None,
-        )
+        headers = get_headers_from_metadata(handler_call_details=handler_call_details)
+
+        authorization = headers.get("authorization", None)
 
         if not authorization:
             return self.create_aio_rpc_error(error="no authorization token found")
@@ -94,12 +90,17 @@ class AuthorizationServerInterceptor(ServerInterceptor):
             return self.create_aio_rpc_error(error="invalid authorization token format")
 
         try:
+            # by default, any HTTP calls inside an interceptor does not propagate headers
+            propagator_header_keys = get_propagator_header_keys()
+            propagator_headers = {k: v for k, v in headers.items() if k in propagator_header_keys}
+
             token = authorization.removeprefix("Bearer ")
             error = self.token_validator.validate_token(
                 token=token,
                 resource=resource,
                 action=action,
                 namespace=self.namespace,
+                x_additional_headers=propagator_headers,
             )
             if error is not None:
                 if isinstance(error, InsufficientPermissionsError):
