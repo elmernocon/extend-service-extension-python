@@ -63,4 +63,4 @@ EXPOSE 8000
 # Prometheus /metrics web server port
 EXPOSE 8080
 
-CMD ./wrapper.sh
+CMD ["sh", "/app/wrapper.sh"]
