@@ -1,7 +1,8 @@
-package main
+// Copyright (c) 2023 AccelByte Inc. All Rights Reserved.
+// This is licensed software from AccelByte Inc, for limitations
+// and restrictions contact your company contract manager.
 
-// uncomment for cdll
-// import "C"
+package main
 
 import (
 	"bytes"
@@ -27,11 +28,10 @@ import (
 )
 
 var (
-	environment         = "production"
-	id                  = int64(1)
 	grpcAddr			= flag.String("grpc-addr", "localhost:6565", "listen grpc address")
 	gatewayHttpPort		= flag.Int("http-port", 8000, "listen http port")
 	serviceName         = common.GetEnv("OTEL_SERVICE_NAME", "ExtendCustomServiceGrpcGateway")
+	basePath			= common.GetBasePath()
 )
 
 func newGRPCGatewayHTTPServer(
@@ -72,28 +72,20 @@ func loggingMiddleware(logger *logrus.Logger, next http.Handler) http.Handler {
 func serveSwaggerUI(mux *http.ServeMux) {
 	swaggerUIDir := "third_party/swagger-ui"
 	fileServer := http.FileServer(http.Dir(swaggerUIDir))
-	swaggerUiPath := fmt.Sprintf("%s/apidocs/", common.BasePath)
+	swaggerUiPath := fmt.Sprintf("%s/apidocs/", basePath)
 	mux.Handle(swaggerUiPath, http.StripPrefix(swaggerUiPath, fileServer))
 }
 
 func serveSwaggerJSON(mux *http.ServeMux, swaggerDir string) {
 	fileHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		matchingFiles, err := filepath.Glob(filepath.Join(swaggerDir, "*.swagger.json"))
-		if err != nil || len(matchingFiles) == 0 {
-			http.Error(w, "Error finding Swagger JSON file", http.StatusInternalServerError)
-
-			return
-		}
-
-		firstMatchingFile := matchingFiles[0]
-		swagger, err := loads.Spec(firstMatchingFile)
+		swagger, err := loads.Spec(filepath.Join(swaggerDir, "service.swagger.json"))
 		if err != nil {
 			http.Error(w, "Error parsing Swagger JSON file", http.StatusInternalServerError)
 			return
 		}
 
 		// Update the base path
-		swagger.Spec().BasePath = common.BasePath
+		swagger.Spec().BasePath = basePath
 
 		updatedSwagger, err := swagger.Spec().MarshalJSON()
 		if err != nil {
@@ -113,28 +105,25 @@ func serveSwaggerJSON(mux *http.ServeMux, swaggerDir string) {
 			return
 		}
 	})
-	apidocsPath := fmt.Sprintf("%s/apidocs/api.json", common.BasePath)
+	apidocsPath := fmt.Sprintf("%s/apidocs/api.json", basePath)
 	mux.Handle(apidocsPath, fileHandler)
 }
-
-// uncomment for cdll
-// export main
 
 func main() {
 	flag.Parse()
 	defer glog.Flush()	
 	
-	logrus.Infof("starting gateway server..")
+	logrus.Infof("Starting %s on port %d with base path %s", serviceName, *gatewayHttpPort, basePath)
 
 	ctx := context.Background()
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	stopTracing := common.InitTracing(ctx, serviceName, environment, id)
+	stopTracing := common.InitTracing(ctx, serviceName)
 	defer stopTracing()
 
 	// Create a new HTTP server for the gRPC-Gateway
-	grpcGateway, err := common.NewGateway(ctx, *grpcAddr)
+	grpcGateway, err := common.NewGateway(ctx, *grpcAddr, basePath)
 	if err != nil {
 		logrus.Fatalf("Failed to create gRPC-Gateway: %v", err)
 	}
@@ -143,17 +132,15 @@ func main() {
 	go func() {
 		swaggerDir := "apidocs" // Path to swagger directory
 		grpcGatewayHTTPServer := newGRPCGatewayHTTPServer(fmt.Sprintf(":%d", *gatewayHttpPort), grpcGateway, logrus.New(), swaggerDir)
-		logrus.Infof("Starting gRPC-Gateway HTTP server on port %d", *gatewayHttpPort)
 		if err := grpcGatewayHTTPServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			logrus.Fatalf("Failed to run gRPC-Gateway HTTP server: %v", err)
-		}
+		}		
 	}()
 
-	logrus.Infof("grpc server started")
-    logrus.Infof("app server started on base path: " + common.BasePath)
+	logrus.Infof("%s started", serviceName)
 
 	ctx, stop := signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
 	defer stop()
 	<-ctx.Done()
-	logrus.Infof("signal received")
+	logrus.Infof("SIGTERM received")
 }

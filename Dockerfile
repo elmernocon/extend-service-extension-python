@@ -12,7 +12,7 @@ COPY proto.sh .
 RUN bash proto.sh
 
 # gRPC Gateway Builder
-FROM --platform=$BUILDPLATFORM golang:1.20 AS grpc-gateway-builder
+FROM --platform=$BUILDPLATFORM golang:1.24 AS grpc-gateway-builder
 ARG TARGETOS
 ARG TARGETARCH
 ARG GOOS=$TARGETOS
