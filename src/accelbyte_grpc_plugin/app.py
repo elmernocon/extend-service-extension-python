@@ -122,7 +122,7 @@ class App:
             **kwargs,
         )
 
-        self.grpc_server = grpc.aio.server(interceptors=self.grpc_interceptors)
+        self.grpc_server = grpc.aio.server(interceptors=self.grpc_interceptors,options=[("grpc.max_metadata_size", 2**14)])
         self.logger.info("gRPC server created")
 
         self.apply_option_range(
