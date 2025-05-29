@@ -49,13 +49,14 @@ class App:
             env = Env()
             env.read_env()
 
-        with env.prefixed(prefix="SERVICE_"):
-            if not name:
-                name = env.str("NAME", self.DEFAULT_NAME)
-            if port is None:
-                port = env.int("PORT", self.DEFAULT_PORT)
-            if log_level is None:
-                log_level = env.log_level("LOG_LEVEL", self.DEFAULT_LOG_LEVEL)
+        if not name:
+            name = env.str("SERVICE_NAME", env.str("OTEL_SERVICE_NAME", self.DEFAULT_NAME))
+
+        if port is None:
+            port = env.int("SERVICE_PORT", self.DEFAULT_PORT)
+
+        if log_level is None:
+            log_level = env.log_level("SERVICE_LOG_LEVEL", self.DEFAULT_LOG_LEVEL)
 
         if logger is None:
             logger = logging.getLogger(name)
