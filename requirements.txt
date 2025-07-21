@@ -17,7 +17,7 @@ googleapis-common-protos==1.63.0
 protobuf==3.20.3
 python-logging-loki==0.3.1
 
-accelbyte-py-sdk
+accelbyte-py-sdk==0.77.0
 bitarray
 httpx[http2]
 mmh3
