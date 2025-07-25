@@ -1,0 +1,27 @@
+name: Upload Image
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: "Image tag to use when uploading the image."
+        required: true
+
+jobs:
+  upload:
+    runs-on: "ubuntu-latest"
+    env:
+      AB_BASE_URL: "${{ secrets.BASE_URL }}"
+      AB_CLIENT_ID: "${{ secrets.CLIENT_ID }}"
+      AB_CLIENT_SECRET: "${{ secrets.CLIENT_SECRET }}"
+    steps:
+      - uses: "actions/checkout@v4"
+
+      - name: "Install Extend Helper CLI"
+        id: "install"
+        uses: "elmernocon/accelbyte-extend-github-action@v1"
+
+      - name: "Upload"
+        id: "upload"
+        run: |
+          extend-helper-cli image-upload --namespace ${{ secrets.NAMESPACE }} --app ${{ secrets.APP }} --image-tag ${{ inputs.image_tag }} --login
