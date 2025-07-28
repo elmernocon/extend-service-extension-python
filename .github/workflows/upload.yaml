@@ -1,27 +1,48 @@
-name: Upload Image
+name: Upload and Deploy
 
 on:
-  workflow_dispatch:
-    inputs:
-      image_tag:
-        description: "Image tag to use when uploading the image."
-        required: true
+  release:
+    types: [published]
 
 jobs:
   upload:
-    runs-on: "ubuntu-latest"
-    env:
-      AB_BASE_URL: "${{ secrets.BASE_URL }}"
-      AB_CLIENT_ID: "${{ secrets.CLIENT_ID }}"
-      AB_CLIENT_SECRET: "${{ secrets.CLIENT_SECRET }}"
+    runs-on: ubuntu-latest
     steps:
-      - uses: "actions/checkout@v4"
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - name: "Install Extend Helper CLI"
-        id: "install"
-        uses: "elmernocon/accelbyte-extend-github-action@v1"
+      - name: Install Extend Helper CLI
+        uses: elmernocon/accelbyte-extend-github-action@v1
 
-      - name: "Upload"
-        id: "upload"
+      - name: Upload Image
+        env:
+          AB_BASE_URL: ${{ secrets.BASE_URL }}
+          AB_CLIENT_ID: ${{ secrets.CLIENT_ID }}
+          AB_CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
         run: |
-          extend-helper-cli image-upload --namespace ${{ secrets.NAMESPACE }} --app ${{ secrets.APP }} --image-tag ${{ inputs.image_tag }} --login
+          extend-helper-cli image-upload \
+            --namespace ${{ secrets.NAMESPACE }} \
+            --app ${{ secrets.APP }} \
+            --image-tag ${{ github.event.release.tag_name }} \
+            --login
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: upload
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Extend Helper CLI
+        uses: elmernocon/accelbyte-extend-github-action@v1
+
+      - name: Deploy App
+        env:
+          AB_BASE_URL: ${{ secrets.BASE_URL }}
+          AB_CLIENT_ID: ${{ secrets.CLIENT_ID }}
+          AB_CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
+        run: |
+          extend-helper-cli deploy-app \
+            --namespace ${{ secrets.NAMESPACE }} \
+            --app ${{ secrets.APP }} \
+            --image-tag ${{ github.event.release.tag_name }}
